@@ -1,53 +1,62 @@
-// public/script.js
-const ws = new WebSocket('ws://localhost:3000');
+const socket = new WebSocket('ws://localhost:3000');
+let playerSymbol = null;
 
-// WebSocket接続成功時
-ws.onopen = () => {
-  console.log('Connected to WebSocket server');
-};
+document.getElementById('createRoom').addEventListener('click', () => {
+  socket.send(JSON.stringify({ type: 'createRoom' }));
+});
 
-// サーバーからのメッセージ受信
-ws.onmessage = (event) => {
+document.getElementById('joinRoom').addEventListener('click', () => {
+  const roomID = document.getElementById('roomID').value;
+  socket.send(JSON.stringify({ type: 'joinRoom', roomID }));
+});
+
+document.getElementById('exitGame').addEventListener('click', () => {
+  socket.send(JSON.stringify({ type: 'exitGame' }));
+  showLobby();
+});
+
+document.querySelectorAll('.cell').forEach(cell => {
+  cell.addEventListener('click', () => {
+    if (cell.textContent === '' && playerSymbol) {
+      const index = cell.getAttribute('data-index');
+      socket.send(JSON.stringify({ type: 'makeMove', index }));
+    }
+  });
+});
+
+socket.addEventListener('message', (event) => {
   const data = JSON.parse(event.data);
-  console.log('Received message:', data);
 
   switch (data.type) {
     case 'roomCreated':
-      console.log(`Room created with ID: ${data.roomID}`);
+      document.getElementById('roomID').value = data.roomID;
       break;
 
     case 'startGame':
-      console.log(`Game started. Your symbol is: ${data.symbol}`);
+      playerSymbol = data.symbol;
+      showGame();
       break;
 
     case 'moveMade':
-      console.log(`Move made at index ${data.index} by player ${data.symbol}`);
+      document.querySelector(`.cell[data-index="${data.index}"]`).textContent = data.symbol;
       break;
 
     case 'gameEnd':
-      console.log(`Game ended with result: ${data.result}`);
+      document.getElementById('gameStatus').textContent = data.result === 'draw' ? '引き分けです！' : `${data.result} の勝ちです！`;
       break;
 
     case 'error':
-      console.error(`Error: ${data.message}`);
+      document.getElementById('errorMessage').textContent = data.message;
       break;
   }
-};
+});
 
-// メッセージをサーバーに送信する関数
-function createRoom() {
-  ws.send(JSON.stringify({ type: 'createRoom' }));
+function showLobby() {
+  document.getElementById('lobby').style.display = 'block';
+  document.getElementById('game').style.display = 'none';
 }
 
-function joinRoom(roomID) {
-  ws.send(JSON.stringify({ type: 'joinRoom', roomID }));
+function showGame() {
+  document.getElementById('lobby').style.display = 'none';
+  document.getElementById('game').style.display = 'block';
 }
-
-function makeMove(index) {
-  ws.send(JSON.stringify({ type: 'makeMove', index }));
-}
-
-// WebSocket切断時
-ws.onclose = () => {
-  console.log('Disconnected from WebSocket server');
-};
