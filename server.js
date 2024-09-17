@@ -1,19 +1,18 @@
-// server.js
 const http = require('http');
 const WebSocket = require('ws');
 const express = require('express');
 const cors = require('cors');
 const app = express();
 
-// CORSを有効化
+// CORSを有効にする
 app.use(cors());
-app.use(express.static('public')); // 静的ファイルを提供するpublicフォルダを使用
+app.use(express.static('public')); // 'public'フォルダ内の静的ファイルを提供
 
 // サーバーの作成
 const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
 
-// ポート3000でサーバーをリッスン（外部接続も許可）
+// ポート3000でサーバーをリッスン
 server.listen(3000, '0.0.0.0', () => {
   console.log('Server is listening on port 3000');
 });
@@ -45,7 +44,7 @@ wss.on('connection', (ws) => {
           rooms[roomID].players.push(ws);
           startGame(roomID);
         } else {
-          ws.send(JSON.stringify({ type: 'error', message: 'Room is full or does not exist' }));
+          ws.send(JSON.stringify({ type: 'error', message: 'ルームが満員または存在しません' }));
         }
         break;
 
