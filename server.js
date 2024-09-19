@@ -9,13 +9,8 @@ const io = new Server(server);
 // 静的ファイルの提供
 app.use(express.static('public'));
 
-// /socket.io.js の提供を自動で行うために、以下の行を追加
-// サーバーが自動的にクライアント用のSocket.IOライブラリを提供します。
-app.get('/socket.io.js', (req, res) => {
-    res.sendFile(require.resolve('socket.io/client-dist/socket.io.js'));
-});
-
-let rooms = {};  // ルーム情報を保持
+// ルーム情報を保持
+let rooms = {};
 
 io.on('connection', (socket) => {
     console.log(`ユーザーが接続しました: ${socket.id}`);
