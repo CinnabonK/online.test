@@ -1,62 +1,44 @@
-const socket = new WebSocket('ws://localhost:3000');
-let playerSymbol = null;
+const socket = io();
 
-document.getElementById('createRoom').addEventListener('click', () => {
-  socket.send(JSON.stringify({ type: 'createRoom' }));
+const createRoomBtn = document.getElementById('createRoomBtn');
+const joinRoomBtn = document.getElementById('joinRoomBtn');
+const roomIDInput = document.getElementById('roomIDInput');
+const errorDiv = document.getElementById('error');
+
+createRoomBtn.addEventListener('click', () => {
+    socket.emit('createRoom');
 });
 
-document.getElementById('joinRoom').addEventListener('click', () => {
-  const roomID = document.getElementById('roomID').value;
-  socket.send(JSON.stringify({ type: 'joinRoom', roomID }));
-});
-
-document.getElementById('exitGame').addEventListener('click', () => {
-  socket.send(JSON.stringify({ type: 'exitGame' }));
-  showLobby();
-});
-
-document.querySelectorAll('.cell').forEach(cell => {
-  cell.addEventListener('click', () => {
-    if (cell.textContent === '' && playerSymbol) {
-      const index = cell.getAttribute('data-index');
-      socket.send(JSON.stringify({ type: 'makeMove', index }));
+joinRoomBtn.addEventListener('click', () => {
+    const roomID = roomIDInput.value.trim();
+    if (roomID) {
+        socket.emit('joinRoom', roomID);
+    } else {
+        displayError('ルームIDを入力してください');
     }
-  });
 });
 
-socket.addEventListener('message', (event) => {
-  const data = JSON.parse(event.data);
-
-  switch (data.type) {
-    case 'roomCreated':
-      document.getElementById('roomID').value = data.roomID;
-      break;
-
-    case 'startGame':
-      playerSymbol = data.symbol;
-      showGame();
-      break;
-
-    case 'moveMade':
-      document.querySelector(`.cell[data-index="${data.index}"]`).textContent = data.symbol;
-      break;
-
-    case 'gameEnd':
-      document.getElementById('gameStatus').textContent = data.result === 'draw' ? '引き分けです！' : `${data.result} の勝ちです！`;
-      break;
-
-    case 'error':
-      document.getElementById('errorMessage').textContent = data.message;
-      break;
-  }
+socket.on('roomCreated', (roomID) => {
+    startGame(roomID);
 });
 
-function showLobby() {
-  document.getElementById('lobby').style.display = 'block';
-  document.getElementById('game').style.display = 'none';
+socket.on('startGame', (roomID) => {
+    startGame(roomID);
+});
+
+socket.on('error', (message) => {
+    displayError(message);
+});
+
+function startGame(roomID) {
+    document.getElementById('lobby').style.display = 'none';
+    document.getElementById('game').style.display = 'block';
+    document.getElementById('roomIDDisplay').textContent = roomID;
 }
 
-function showGame() {
-  document.getElementById('lobby').style.display = 'none';
-  document.getElementById('game').style.display = 'block';
+function displayError(message) {
+    errorDiv.textContent = message;
+    setTimeout(() => {
+        errorDiv.textContent = '';
+    }, 3000);
 }
